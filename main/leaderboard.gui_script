@@ -1,0 +1,122 @@
+function init(self)
+	gui.set_enabled(gui.get_node("back"), false)
+	gui.set_enabled(gui.get_node("first"), false)
+	gui.set_enabled(gui.get_node("second"), false)
+	gui.set_enabled(gui.get_node("third"), false)
+	gui.set_enabled(gui.get_node("fourth"), false)
+	gui.set_enabled(gui.get_node("fifth"), false)
+	gui.set_enabled(gui.get_node("firstscore"), false)
+	gui.set_enabled(gui.get_node("secondscore"), false)
+	gui.set_enabled(gui.get_node("thirdscore"), false)
+	gui.set_enabled(gui.get_node("fourthscore"), false)
+	gui.set_enabled(gui.get_node("fifthscore"), false)
+	gui.set_enabled(gui.get_node("exit"), false)--initially not visisble
+	self.current_level = 0
+	
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("on")then
+		gui.set_enabled(gui.get_node("back"), true)
+		gui.set_enabled(gui.get_node("exit"), true)--makes it visisble
+
+		file = sys.get_save_file("The Shortest Way", self.current_level)--gets correct file path
+		list = sys.load(file)--gets the array stored within
+		--as the list has no duplicates as check from tilemap script, can just sort
+		table.sort(list, function (left, right)
+			return left[2] < right[2]--makes sure its sorted based on excess moves in ascending 
+		end)
+
+		if #list > 5 then
+			for i = 6, #list, 1 do
+				table.remove(list, 6)--this will delete all the unnecessry data
+			end
+			sys.save(file, list)--then should resave for future effeciency
+		end
+
+		if list[1] ~= nil then
+			gui.set_text(gui.get_node("first"), list[1][1])
+			gui.set_text(gui.get_node("firstscore"), tostring(list[1][2]))--this puts data into the leaderboard
+			gui.set_enabled(gui.get_node("first"), true)
+			gui.set_enabled(gui.get_node("firstscore"), true)
+		end
+
+		if list[2] ~= nil then
+			gui.set_text(gui.get_node("second"), list[2][1])
+			gui.set_text(gui.get_node("secondscore"), tostring(list[2][2]))
+			gui.set_enabled(gui.get_node("second"), true)
+			gui.set_enabled(gui.get_node("secondscore"), true)
+		end
+
+		if list[3] ~= nil then
+			gui.set_text(gui.get_node("third"), list[3][1])
+			gui.set_text(gui.get_node("thirdscore"), tostring(list[3][2]))
+			gui.set_enabled(gui.get_node("third"), true)
+			gui.set_enabled(gui.get_node("thirdscore"), true)
+		end
+
+		if list[4] ~= nil then
+			gui.set_text(gui.get_node("fourth"), list[4][1])
+			gui.set_text(gui.get_node("fourthscore"), tostring(list[4][2]))
+			gui.set_enabled(gui.get_node("fourth"), true)
+			gui.set_enabled(gui.get_node("fourthscore"), true)
+		end
+
+		if list[5] ~= nil then
+			gui.set_text(gui.get_node("fifth"), list[5][1])
+			gui.set_text(gui.get_node("fifthscore"), tostring(list[5][2]))
+			gui.set_enabled(gui.get_node("fifth"), true)
+			gui.set_enabled(gui.get_node("fifthscore"), true)
+		end
+			
+		
+		msg.post(".", "acquire_input_focus")--this allows for inputs
+	end
+
+	if message_id == hash("1")then
+		self.current_level = "1"
+	elseif message_id == hash("2")then--this makes sure correctl level is stored for leaderboard
+		self.current_level = "2"
+	elseif message_id == hash("3")then
+		self.current_level = "3"
+	elseif message_id == hash("4")then
+		self.current_level = "4"
+	end
+end
+
+function on_input(self, action_id, action)
+	if action.pressed and gui.pick_node(gui.get_node("exit"), action.x, action.y) then
+		gui.set_enabled(gui.get_node("back"), false)
+		gui.set_enabled(gui.get_node("first"), false)
+		gui.set_enabled(gui.get_node("second"), false)
+		gui.set_enabled(gui.get_node("third"), false)
+		gui.set_enabled(gui.get_node("fourth"), false)
+		gui.set_enabled(gui.get_node("fifth"), false)
+		gui.set_enabled(gui.get_node("firstscore"), false)
+		gui.set_enabled(gui.get_node("secondscore"), false)
+		gui.set_enabled(gui.get_node("thirdscore"), false)
+		gui.set_enabled(gui.get_node("fourthscore"), false)
+		gui.set_enabled(gui.get_node("fifthscore"), false)
+		gui.set_enabled(gui.get_node("exit"), false)
+		msg.post(".", "release_input_focus")--this stops inputs
+		msg.post("/end_level#endLevel", "back")
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

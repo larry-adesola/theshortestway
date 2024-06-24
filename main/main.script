@@ -1,0 +1,116 @@
+function init(self)
+	--this allows the script to listen to inputs when initialised
+	msg.post(".", "acquire_input_focus")
+	-- Show the login screen when the game is loaded
+	msg.post("#userLogin", "load")
+	self.current_collection = "#userLogin"
+	self.username = ""
+	self.animalP = false -- stores if animal plays
+	self.sonicP = false -- stores if sonic plays
+end
+
+function final(self)
+	-- this removes all inputs be reacted to by this script when closed
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	--this loas the login screen from memory
+	if message_id == hash("proxy_loaded") then
+		msg.post(sender, "enable")
+		if sender == msg.url("#levelScreen") then--here I know for certain the level screen is loaded
+			msg.post("levelScreen:/gui#levelScreen", "userName", {userName = self.username})--I send the username here
+		end
+		if sender == msg.url("#mainGame") then--send username to main game screen
+			msg.post("main_game:/map#tilemap_script", "userName", {userName = self.username})
+		end
+		if sender == msg.url("#mainGame")then
+			if self.difficulty == 1 then--therefore message only sent when loaded
+				msg.post("main_game:/map#tilemap_script", "1")--sends difficulty to correct collection
+			elseif self.difficulty == 2 then
+				msg.post("main_game:/map#tilemap_script", "2")
+			elseif self.difficulty == 3 then
+				msg.post("main_game:/map#tilemap_script", "3")
+			elseif self.difficulty == 4 then
+				msg.post("main_game:/map#tilemap_script", "4")
+			end
+		end
+	elseif message_id == hash("main menu") then
+		-- Title screen
+		msg.post(self.current_collection, "unload")
+		msg.post("#mainMenu", "load")
+		self.current_collection = "#mainMenu"
+		if self.sonicP == false and self.animalP == false then
+			sound.play("/controller#animal") -- this will start playing the animal sound
+			self.animalP = true
+		elseif self.sonicP == true and self.animalP == false then
+			sound.play("/controller#animal") -- this will start playing the animal sound
+			sound.pause("/controller#sonic", true) -- stops the sonic music
+			self.animalP = true -- as it is playing now
+			self.sonicP = false -- this should stop
+		end	
+	elseif message_id == hash("level screen")then
+		--loading level screen
+		msg.post(self.current_collection, "unload")
+		msg.post("#levelScreen", "load")
+		self.current_collection = "#levelScreen"
+		if self.sonicP == true and self.animalP == false then
+			sound.play("/controller#animal") -- this will start playing the animal sound
+			sound.pause("/controller#sonic", true) -- stops the sonic music
+			self.animalP = true -- as it is playing now
+			self.sonicP = false
+		end	
+	elseif message_id == hash("game screen")then
+		--loading main game
+		msg.post(self.current_collection, "unload")
+		msg.post("#mainGame", "load") -- immediately loads the map 
+		self.current_collection = "#mainGame"
+
+		self.difficulty = message.difficulty -- stores difficulty to this variable
+		sound.pause("/controller#animal", true)--plays sonic pause animal
+		sound.play("/controller#sonic")
+		self.animalP = false
+		self.sonicP = true
+	elseif message_id == hash("username")then --here I stored the username in a variable
+		self.username = message.username
+		print(self.username .. " test")
+	end
+
+	if message_id == hash("mute")then
+		sound.pause("/controller#sonic", true)--this pause both of the music when asked to mute
+		sound.pause("/controller#animal", true)
+		print("w")
+	elseif message_id == hash("unmute") then
+		if self.animalP == true then
+			sound.play("/controller#animal")--this therefore starts playing the right music
+		elseif self.sonicP == true then
+			sound.play("/controller#sonic")
+		end
+
+	end	
+		
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here. The game object this script is attached to
+	-- must have acquired input focus:
+	--
+	--    msg.post(".", "acquire_input_focus")
+	--
+	-- All mapped input bindings will be received. Mouse and touch input will
+	-- be received regardless of where on the screen it happened.
+	-- Learn more: https://defold.com/manuals/input/
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

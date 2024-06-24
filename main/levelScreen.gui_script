@@ -1,0 +1,42 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.username = ""
+end
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("userName") then -- for some reason the message id goes nil, but the code still works
+		self.username = message.userName --this will send the username used to log in to this collection
+		gui.set_text(gui.get_node("username"), self.username)--sets the text to the username
+	end
+end
+
+function on_input(self, action_id, action) 
+	if action.pressed and gui.pick_node(gui.get_node("back_button"), action.x, action.y) then
+		msg.post("main:/controller", "main menu")--pressing the back button loads back the main menu
+	end
+	if action.pressed and gui.pick_node(gui.get_node("level_1"), action.x, action.y) then
+		msg.post("main:/controller", "game screen", {difficulty = 1}) -- sends the difficulty to main controller
+	elseif action.pressed and gui.pick_node(gui.get_node("level_2"), action.x, action.y) then
+		msg.post("main:/controller", "game screen", {difficulty = 2})
+	elseif action.pressed and gui.pick_node(gui.get_node("level_3"), action.x, action.y) then
+		msg.post("main:/controller", "game screen", {difficulty = 3})
+	elseif action.pressed and gui.pick_node(gui.get_node("level_4"), action.x, action.y) then
+		msg.post("main:/controller", "game screen", {difficulty = 4})
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

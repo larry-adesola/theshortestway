@@ -1,0 +1,22 @@
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 1280
+height = 720
+
+[android]
+input_method = HiddenInputField
+
+[project]
+title = The Shortest Way
+
+[tilemap]
+max_tile_count = 100000
+
+[resource]
+max_resources = 1000000
+

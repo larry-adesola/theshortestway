@@ -1,0 +1,454 @@
+require "main.class"
+
+node = class(
+	{
+
+		neighbours = {}; --this is where the attributes as in PC1 are stored
+		distanceFromStart = 10000;
+		previousNode = "";
+		x = 0;
+		y = 0;
+		visited = false;
+
+	}
+)
+
+function node:setNeighbours(neighbourArray)--sets the value of the neighbour array
+	self.neighbours = neighbourArray
+end
+
+function node:giveNeighbours()--gives the value of the array
+	return self.neighbours
+end
+
+function node:setPos(xPos, yPos)--sets the value of the neighbour array
+	self.x = xPos
+	self.y = yPos
+end
+
+function node:givePos() --returns an array of the node position
+	pos = {self.x, self.y}
+	return pos
+end
+
+function node:setDistance(newDistance) -- sets distance from start
+	self.distanceFromStart = newDistance
+end
+
+function node:giveDistance() -- gives distance from start
+	return self.distanceFromStart
+end
+
+function node:setPreviousNode(newPrevious)--sets previous node
+	self.previousNode = newPrevious
+end
+
+function node:givePreviousNode()--returns the previous node visited
+	return self.previousNode
+end
+
+function node:setVisit(newVisit)--sets previous node
+	self.visited = newVisit
+end
+
+function node:giveVisit()--returns the previous node visited
+	return self.visited
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.x = 5
+	self.y = 5 -- to store co-ordinates
+	self.arrayOfNodes = {} -- this is to creates a global array for the nodes to be stored in
+	self.start_x = 0 --this is to store start pos of the player
+	self.start_y = 0
+	self.end_x = 0 --this is to store end pos of the player
+	self.end_y = 0
+	self.stop = false -- this will be true once end node reached to stop player moving
+	self.count = 0
+	self.small_moves = 0 -- this stores smallest moves possible
+	self.player_count = 0 -- counts the moves of the player
+	self.current_level = 0 -- saves current level
+	self.username = "" -- to save username
+end
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	if self.count == 0 then
+		if (self.x == self.end_x) and  (self.y == self.end_y) then
+			msg.post("main_game:/map#tilemap_script", "pathfind")
+			self.count = self.count + 1
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("1") then -- this is sent from main controller
+		self.current_level = 1 -- to save the level number
+		mapGenerate(1, self)--this will generate the map
+	elseif message_id == hash("2") then
+		self.current_level = 2
+		mapGenerate(2, self)
+	elseif message_id == hash("3") then
+		self.current_level = 3
+		mapGenerate(3, self)
+	elseif message_id == hash("4") then
+		self.current_level = 4
+		mapGenerate(4, self)
+	end
+
+	if message_id == hash("unpause")then
+		msg.post(".", "acquire_input_focus")
+	end
+
+	if message_id == hash("userName")then
+		self.username = message.userName --this will send the username used to log in to this collection
+	end
+
+	if message_id == hash("pathfind")then
+		self.stop = true -- this stops the movement as end node met
+		path = pathFinder(self, {self.start_x, self.start_y}, {self.end_x, self.end_y})--required path stored in array
+		--use of for loop to start highlighting the path below
+		self.small_moves = #path -1 -- this sets the smallest path to the variable
+		for i =1, (#path-1) do
+			--this passes throigh the path array
+			tilemap.set_tile("/map#map_tilemap", "rock", path[i][1], path[i][2], 5)--this sets the highlighting
+		end
+
+		self.excess_moves = self.player_count - self.small_moves -- calculates the excess moves
+
+		row = {self.username, self.excess_moves}--this stores the results to be saved
+
+		if self.current_level == 1 then
+			file = sys.get_save_file("The Shortest Way", "1")--gets file location to save for level 1
+			msg.post("/leaderbaord#leaderboard", "1")
+		elseif self.current_level == 2 then
+			file = sys.get_save_file("The Shortest Way", "2")--gets file location to save for level 2
+			msg.post("/leaderbaord#leaderboard", "2")
+		elseif self.current_level == 3 then
+			file = sys.get_save_file("The Shortest Way", "3")--gets file location to save for level 3
+			msg.post("/leaderbaord#leaderboard", "3")
+		elseif self.current_level == 4 then
+			file = sys.get_save_file("The Shortest Way", "4")--gets file location to save for level 4
+			msg.post("/leaderbaord#leaderboard", "4")
+		end	
+		
+		list = sys.load(file) --loads what is already there
+		if #list == 0 then
+			sys.save(file, {row})--if empty then should just save this there
+		elseif #list > 0 then
+			local check = false
+			for i = 1, #list, 1 do
+				if (list[i][1] == self.username) and (list[i][2]>self.excess_moves)then
+					table.remove(list, i)
+					table.insert(list, row)--adds the value to the table
+					check = true
+				elseif list[i][1] == self.username then
+					check = true
+				end
+			end
+			if check ==false then
+				table.insert(list, row)--adds the value to the table
+			end
+			sys.save(file, list)--saves the file
+		end
+
+	end
+end
+
+function mapGenerate(difficulty, self)
+	math.randomseed(socket.gettime() * 10000) -- to make true random
+	local xpos = 0
+	local ypos = 0
+	for x = 1, 20, 1--makes the grass
+	do
+		for y = 1, 20, 1
+		do
+			tilemap.set_tile("/map#map_tilemap", "background", x, y, 1)
+		end
+	end
+
+	if difficulty == 1 then
+		for i = 1, 20, 1
+		do
+			xpos = math.random(1, 20)
+			ypos = math.random(1, 20)
+
+			tilemap.set_tile("/map#map_tilemap", "rock", xpos, ypos, 2)
+		end
+	elseif difficulty == 2 then
+		for i = 1, 40, 1
+		do
+			xpos = math.random(1, 20)
+			ypos = math.random(1, 20)
+
+			tilemap.set_tile("/map#map_tilemap", "rock", xpos, ypos, 2)
+		end
+	elseif difficulty == 3 then
+		for i = 1, 50, 1
+		do
+			xpos = math.random(1, 20)
+			ypos = math.random(1, 20)
+
+			tilemap.set_tile("/map#map_tilemap", "rock", xpos, ypos, 2)
+		end
+	elseif difficulty == 4 then
+		for i = 1, 70, 1
+		do
+			xpos = math.random(1, 20)
+			ypos = math.random(1, 20)
+
+			tilemap.set_tile("/map#map_tilemap", "rock", xpos, ypos, 2)
+		end
+	end
+	-- too generarete end node
+	xpos = math.random(1, 20)
+	xpos = math.floor((xpos + 20) / 2 ) -- too make sure it is bottom right
+	ypos = math.random(1, 20)
+	ypos = math.floor((ypos) / 2 )
+
+	self.end_x = xpos
+	self.end_y = ypos 
+	tilemap.set_tile("/map#map_tilemap", "rock", xpos, ypos, 4)
+
+	math.randomseed(socket.gettime() * 10000) -- to make true random
+	xpos = math.random(2, 20)
+	xpos = math.floor((xpos) / 2 ) -- too make sure it is top right
+	ypos = math.random(2, 20)
+	ypos = math.floor((ypos + 20) / 2 )
+
+	while tilemap.get_tile("/map#map_tilemap", "rock", xpos, ypos) == 2  -- stops spawning on a rock
+	do
+		xpos = math.random(1, 20)
+		xpos = math.floor((xpos) / 2 ) -- too make sure it is top right
+		ypos = math.random(1, 20)
+		ypos = math.floor((ypos + 20) / 2 )
+	end
+	
+	self.x = xpos --this makes sure initial position is stored for future reference
+	self.y = ypos
+	self.start_x = xpos --this makes sure initial position is stored for future reference
+	self.start_y = ypos
+	tilemap.set_tile("/map#map_tilemap", "background", xpos, ypos, 3)
+	
+	nodeConversion(self) -- the tile to node conversion will occur immediately when the map has been generated
+	
+end
+
+function on_input(self, action_id, action)
+	--this only runs when the player has not reach the end node
+	if self.stop == false then
+		if action_id == hash("up") and action.released then--this makes sure 1 click at a time moves user
+			self.player_count = self.player_count + 1 -- this adds 1 each time this key is pressed
+			if tilemap.get_tile("/map#map_tilemap", "rock", self.x, self.y + 1) ~= 2 
+			and self.y <20 then -- stops user passing boundary
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 6)--makes player path
+				self.y = self.y + 1 -- increments value
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 3)
+			end
+		elseif action_id == hash("down") and action.released then
+			self.player_count = self.player_count + 1
+			if tilemap.get_tile("/map#map_tilemap", "rock", self.x, self.y - 1) ~= 2 and self.y > 1 then
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 6)
+				self.y = self.y - 1
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 3)
+			end
+		elseif action_id == hash("right") and action.released then
+			self.player_count = self.player_count + 1
+			if tilemap.get_tile("/map#map_tilemap", "rock", self.x + 1, self.y) ~= 2 and self.x <20 then
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 6)
+				self.x = self.x + 1
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 3)
+			end
+		elseif action_id == hash("left") and action.released then
+			self.player_count = self.player_count + 1
+			if tilemap.get_tile("/map#map_tilemap", "rock", self.x -1, self.y) ~= 2 and self.x > 1 then
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 6)
+				self.x = self.x - 1
+				tilemap.set_tile("/map#map_tilemap", "background", self.x, self.y, 3)
+			end
+		end	
+	end
+
+	if action_id == hash("pause") and action.released then
+		msg.post(".", "release_input_focus") --no more inputs taken anymore
+		msg.post("/pause#pause", "pause")
+	end
+
+	if self.stop == true then
+		if action_id == hash("enter") and action.released then
+			msg.post(".", "release_input_focus") --no more inputs taken anymore
+			msg.post("/end_level#endLevel", "end", {excess = self.excess_moves; level = self.current_level}) 
+			--sends to show end screen
+		end
+	end
+end
+
+function nodeConversion(self)
+	for i = 1, (20*20), 1
+	do
+		table.insert(self.arrayOfNodes, i, node()) -- this makes an array filled with right number of nodes.
+	end
+	num = 1 --this is to get the right spot in the array when making the neighbours
+	for i = 1, 20, 1
+	do
+		for j = 1, 20, 1
+		do
+			
+			self.arrayOfNodes[num]:setPos(i, j) -- sets the position here
+			--set the neighbours here
+			if i < 2 and j<2 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j+1},{i+1, j}})
+			elseif i > 19 and j<2 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j+1},{i-1, j}})
+			elseif i > 19 and j>19 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j-1},{i-1, j}})
+			elseif i <2 and j>19 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j-1},{i+1, j}})
+			elseif i < 2 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j+1},{i+1, j},{i, j-1}})
+			elseif i > 19 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j+1},{i-1, j},{i, j-1}})
+			elseif j < 2 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j+1},{i+1, j},{i-1, j}})
+			elseif j > 19 then
+				self.arrayOfNodes[num]:setNeighbours({{i, j-1},{i+1, j},{i-1, j}})				
+			else
+				self.arrayOfNodes[num]:setNeighbours({{i, j-1},{i+1, j}, {i, j+1}, {i-1, j}})
+			end
+			tempN = self.arrayOfNodes[num]:giveNeighbours()
+			minusBack = false--to keep track if 1 obstacle is neighbiur
+			minusBack2 = false -- to keep track if 2 obstacle neighbour
+			minusBack3 = false -- to keep track if 3 obstacle neighbour
+			minusBack4 = false -- to keep track if all obstacle neighbour
+			for N = 1, #tempN 
+			do
+				if minusBack4 == true then 
+					N = N-4
+				elseif minusBack3 == true then--this all makes sure deleting an index has no affect
+					N = N -3
+				elseif minusBack2 == true then
+					N = N -2
+				elseif minusBack == true then
+					N = N -1
+				end
+				
+				if tilemap.get_tile("/map#map_tilemap", "rock", tempN[N][1], tempN[N][2]) == 2 then--removes obstacles from being neighbours
+					table.remove(tempN, N)
+					if minusBack3 == true then
+						minusBack4 = true
+					end
+					if minusBack2 == true then--this makes sure the right boolean is turned true, if more neighbouring obstacles
+						minusBack3 = true
+					end
+					if minusBack == true then
+						minusBack2 = true
+					end
+					minusBack = true
+					self.arrayOfNodes[num]:setNeighbours(tempN)
+				end
+				
+			end
+			num = num + 1
+		end
+	end	
+end
+
+function contains(table, val)--code is needed to check if a value is in an array, as lua does not come with this function
+	for i=1,#table do--searches through the array
+		if (table[i][1] == val[1]) and (table[i][2] == val[2]) then 
+			return true
+		end
+	end
+	return false
+end
+
+
+function pathFinder(self, startPos, endPos)
+	priorityQueue = {}--a priority queueu is needed for pathfinding
+	listStartPos = nil--this is to store position of start node within the array
+	for n = 1, #self.arrayOfNodes
+	do
+		if (self.arrayOfNodes[n]:givePos()[1] == startPos[1])and (self.arrayOfNodes[n]:givePos()[2] == startPos[2]) then
+			self.arrayOfNodes[n]:setDistance(0) --this sets the start node to 0 for distance 
+			listStartPos = n -- this is so I can keep track
+		end
+	end
+	table.insert(priorityQueue, {self.arrayOfNodes[listStartPos],self.arrayOfNodes[listStartPos]:giveDistance()})--puts start first
+	--check if queue is not empty then runs the code
+	while #priorityQueue ~= 0
+	do
+		current = priorityQueue[1][1] -- sets the front of the queue as visted node
+		table.remove(priorityQueue, 1) -- removes visited nodes from the front of priorityQueue
+		current:setVisit(true)--makes this a visited node
+		if (current:givePos()[1] == endPos[1]) and (current:givePos()[2] == endPos[2]) then
+			break -- this  makes algorithm more efficient as doesn't need to visit every single node.
+		end
+
+		for i = 1, #current:giveNeighbours()--this therefore goes through the visted nodes neighbours
+		do
+			cNeigh = nil --this is used in followign to store desired neighbour's position within array 
+			for g = 1, #self.arrayOfNodes
+			do
+				if (self.arrayOfNodes[g]:givePos()[1] == current:giveNeighbours()[i][1]) and (self.arrayOfNodes[g]:givePos()[2] == current:giveNeighbours()[i][2]) then
+					cNeigh = g -- this stores the position within the array of desired neighbour
+					break -- this breaks the loop so it is more efficinent as not necessary to loop longer
+				end
+			end
+			if self.arrayOfNodes[cNeigh]:giveVisit() == false then
+				cost = current:giveDistance() + 1--this calcs the potential new distance from start 
+				
+				if cost < self.arrayOfNodes[cNeigh]:giveDistance() then--if new distance is less than previous then that should be new distance
+					self.arrayOfNodes[cNeigh]:setDistance(cost)--this therefore sets new distance and previous node
+					self.arrayOfNodes[cNeigh]:setPreviousNode(current:givePos())
+				end
+				flag = false -- this is used to flag if a repeat is in the queue
+				for h = 1, #priorityQueue do --thus searches throug the queue
+					if priorityQueue[h][1]==self.arrayOfNodes[cNeigh] then
+						flag = true -- if a repeat then this is turned to true
+						pos_in_pri = h -- the position within the queue needs to be stored too
+						break
+					end
+				end
+
+				if flag == true then
+					table.remove(priorityQueue, pos_in_pri)--thus removes it 
+				end
+				table.insert(priorityQueue, {self.arrayOfNodes[cNeigh], self.arrayOfNodes[cNeigh]:giveDistance()})--then adds it back with new distance
+			end
+		end
+		table.sort(priorityQueue, function (left, right)
+			return left[2] < right[2] -- this ordered it based on the 2nd value so shortest distance is prioritiesed in the queue
+		end)
+	end
+	path = {endPos}-- this would be the beginning of the path required
+	while (not contains(path, startPos))--loop should end once the full path is found as goes from end to start 
+	do
+		posNeeded = #path --this finds the length of the path array, so I can access the last item 
+		for t = 1, #self.arrayOfNodes do
+			if (self.arrayOfNodes[t]:givePos()[1] == path[posNeeded][1]) and (self.arrayOfNodes[t]:givePos()[2] == path[posNeeded][2])then--this will search array of nodes for the recent node in path
+				table.insert(path, self.arrayOfNodes[t]:givePreviousNode())--then add its neighbour to the path until start pos is reached
+			end
+		end
+		
+	end
+	
+	--to reverse the path I will use the code below
+	left = 1--to identify the left most item
+	right = #path--to identify rightmost item
+
+	while (left < right)do
+		temp = path[left]
+		path[left] = path[right]
+		path[right] = temp 
+
+		left = left + 1 -- this is decrmented so that then each opposite end of the list is swapped therefore reversing the list so it can be used
+		right = right - 1
+	end	
+	
+	return path	
+end
+

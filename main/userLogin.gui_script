@@ -1,0 +1,73 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.username = "" --this is the field that will store the username in the text box
+end
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	if self.username == "Username Not Suitable"then -- this clears error message
+		self.username = ""
+	end
+	if action_id == hash("type") then -- when typing occurs, the username variable will edit
+		if string.len(self.username)>10 then -- adding a character limit to username too
+
+		else
+			gui.set_color(gui.get_node("user_text"), vmath.vector4(0, 0, 0, 1))--color black
+			self.username = self.username .. action.text
+			gui.set_text(gui.get_node("user_text"), self.username)--then set to the text node
+		end
+	elseif action_id == hash("backspace") and action.repeated then
+		local l = string.len(self.username)--backspace is given it's functionality here too
+		self.username = string.sub(self.username, 0, l-1) 
+		gui.set_text(gui.get_node("user_text"), self.username)
+	end
+
+	if action_id == hash("enter")then --checks if enter is pressed
+		if validate(self.username)then -- this calls function, if correct then true and code below will run
+			msg.post("main:/controller","username", {username = self.username}) --sends username to main controller
+			msg.post("main:/controller", "main menu")
+		else -- if not an error messgae will show
+			self.username = "Username Not Suitable"
+			gui.set_text(gui.get_node("user_text"), self.username)
+			gui.set_color(gui.get_node("user_text"), vmath.vector4(1, 0, 0, 1)) -- red
+		end
+	end
+end
+
+function validate(username)
+	local letters = 0 -- this to count number of letters in the username
+	for i = 1, string.len(username), 1 -- for loop to count this
+	do -- no isAlpha function so must compare ASCII decimal code
+		if (string.byte(string.sub(username, i, i)) >= 65 and string.byte(string.sub(username, i, i)) <= 90) or 
+		(string.byte(string.sub(username, i, i)) >= 97 and string.byte(string.sub(username, i, i)) <= 122) then
+			letters = letters + 1--increments
+		end
+	end
+
+	if string.len(username)<4 and letters<2 then -- if does not fit criteria then will return false
+		return false
+	else
+		return true -- or true 
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

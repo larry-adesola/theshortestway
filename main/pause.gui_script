@@ -1,0 +1,67 @@
+function init(self)
+	gui.set_enabled(gui.get_node("base"), false) -- makes sure that pause screen is invisible
+	gui.set_enabled(gui.get_node("play"), false)
+	gui.set_enabled(gui.get_node("tutorial"), false)
+	gui.set_enabled(gui.get_node("quit"), false)
+	gui.set_enabled(gui.get_node("mute"), false)
+	self.clicks = 0 -- stores if mute clicked once or twice
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("pause") then
+		gui.set_enabled(gui.get_node("base"), true)
+		gui.set_enabled(gui.get_node("play"), true)
+		gui.set_enabled(gui.get_node("tutorial"), true) -- makes pause screen appear
+		gui.set_enabled(gui.get_node("quit"), true)
+		gui.set_enabled(gui.get_node("mute"), true)
+
+		msg.post(".", "acquire_input_focus")
+	end
+
+end
+
+function on_input(self, action_id, action)
+	if action.pressed and gui.pick_node(gui.get_node("play"), action.x, action.y) then
+		msg.post(".", "release_input_focus")
+		gui.set_enabled(gui.get_node("base"), false) -- makes sure that pause screen is invisible
+		gui.set_enabled(gui.get_node("play"), false)
+		gui.set_enabled(gui.get_node("tutorial"), false)
+		gui.set_enabled(gui.get_node("quit"), false)
+		gui.set_enabled(gui.get_node("mute"), false)
+
+		msg.post("/map#tilemap_script", "unpause") -- this is too re acquire input focus in main game
+	elseif action.pressed and gui.pick_node(gui.get_node("quit"), action.x, action.y) and action_id ~= hash("enter")then
+		msg.post(".", "release_input_focus")
+		msg.post("main:/controller", "level screen") -- loads level screen
+	elseif action.pressed and gui.pick_node(gui.get_node("mute"), action.x, action.y) and action_id ~= hash("enter")then
+		self.clicks = self.clicks + 1
+	end
+
+	if action.pressed and gui.pick_node(gui.get_node("tutorial"), action.x, action.y) and action_id ~= hash("enter")then
+		msg.post("/tutorial#tutorial", "tutorial")--this will open the tutotial screen
+	end
+	if self.clicks == 1 then
+		msg.post("main:/controller#main", "mute")--this will open the mute
+	elseif self.clicks == 2 then
+		msg.post("main:/controller#main", "unmute")--this will open the unmute song
+		self.clicks = 0
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

@@ -1,0 +1,58 @@
+function init(self)
+	gui.set_enabled(gui.get_node("first"), false)
+	gui.set_enabled(gui.get_node("second"), false)
+	gui.set_enabled(gui.get_node("third"), false)--this will make the gui initially invisible
+	gui.set_enabled(gui.get_node("fourth"), false)
+	gui.set_enabled(gui.get_node("fifth"), false)
+	self.enters = 0 -- this counts the number of enters clicked
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("tutorial") then--this will come from the main screen button click
+		msg.post(".", "acquire_input_focus")--this will allow for inputs
+		gui.set_enabled(gui.get_node("first"), true)
+		print("hey")
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("enter") and action.released then -- action released makes sure goes up once
+		self.enters = self.enters + 1--adds 1 so that can put right screen
+	end	
+
+	if self.enters == 1 then
+		gui.set_enabled(gui.get_node("first"), false)--this allows for next slide to show
+		gui.set_enabled(gui.get_node("second"), true)
+	elseif self.enters == 2 then
+		gui.set_enabled(gui.get_node("second"), false)
+		gui.set_enabled(gui.get_node("third"), true)
+	elseif self.enters == 3 then
+		gui.set_enabled(gui.get_node("third"), false)
+		gui.set_enabled(gui.get_node("fourth"), true)
+	elseif self.enters == 4 then
+		gui.set_enabled(gui.get_node("fourth"), false)
+		gui.set_enabled(gui.get_node("fifth"), true)
+	elseif self.enters == 5 then
+		gui.set_enabled(gui.get_node("fifth"), false)
+		self.enters = 0 -- this resets it just in case
+		msg.post(".", "release_input_focus")--this will stop inputs
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
